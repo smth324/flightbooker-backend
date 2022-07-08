@@ -3,6 +3,7 @@ const { Op } = require('sequelize')
 const {
     Flight, Route, Plane, PlaneModel, Place, LayoutBox, Booking, Customer,
 } = require('../models')
+const { calculateFlightPayment } = require('../utils/calculatePayment')
 const { tokenExtractor, userExtractor } = require('../utils/middleware')
 
 router.get('/', tokenExtractor, userExtractor, async (req, res) => {
@@ -86,11 +87,15 @@ router.get('/search', async (req, res) => {
     })
     const numOfVacant = flights.map((x) => x.number_of_vacant())
     const numOfVacantWaited = await Promise.all(numOfVacant)
-    const filter = numOfVacantWaited.map((x) => (
-        x >= Number(req.query.adult) + Number(req.query.child)
+    const asd = flights.map((x, i) => ({
+        ...JSON.parse(JSON.stringify(x)),
+        vacant: numOfVacantWaited[i],
+    }))
+    const flightsWithCapacity = asd.filter((x) => (
+        x.vacant >= Number(req.query.adult) + Number(req.query.child)
     ))
-    const fitleredFlights = flights.filter((x, i) => filter[i])
-    return res.json(fitleredFlights)
+    const flightsWithPrice = calculateFlightPayment(flightsWithCapacity, req.query.cabinClass)
+    return res.json(flightsWithPrice)
 })
 
 router.get('/layout/:id', async (req, res) => {

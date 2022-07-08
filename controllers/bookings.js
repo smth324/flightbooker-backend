@@ -1,7 +1,9 @@
 const router = require('express').Router()
+const { Op } = require('sequelize')
 const {
-    Booking, Customer, Flight, Route, Plane, Place, PlaneModel,
+    Booking, Customer, Flight, Route, Plane, Place, PlaneModel, Promotions, LayoutBox,
 } = require('../models')
+const { calculateBookingPayment, calculateFlightPayment } = require('../utils/calculatePayment')
 const { tokenExtractor, userExtractor } = require('../utils/middleware')
 
 router.get('/', tokenExtractor, userExtractor, async (req, res) => {
@@ -52,7 +54,6 @@ router.get('/:id', tokenExtractor, userExtractor, async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-    console.log(req.body)
     const { customers } = req.body
 
     if (!customers) {
@@ -68,13 +69,98 @@ router.post('/', async (req, res) => {
     })
     await Promise.all(toBuild)
 
+    // validated all customers before proceeding
     const toValidate = []
     for (let i = 0; i < toBuild.length; i += 1) {
         toValidate.push(toBuild[i].validate())
     }
     await Promise.all(toValidate)
 
-    const booking = await Booking.create({ ...req.body.booking })
+    // finds the flight selected
+    const flight = await Flight.findByPk(req.body.booking.flightId, {
+        include: [{
+            model: Route,
+            attributes: { exclude: ['originId', 'destinationId'] },
+            include: [{
+                model: Place,
+                as: 'origin',
+            },
+            {
+                model: Place,
+                as: 'destination',
+            }],
+        }, {
+            model: Booking,
+            include: {
+                model: Customer,
+                include: {
+                    model: LayoutBox,
+                    as: 'seat',
+                },
+            },
+        }, {
+            model: Plane,
+            attributes: { exclude: ['modelId'] },
+            include: {
+                model: PlaneModel,
+                as: 'model',
+            },
+        }],
+    })
+
+    // checks whether selected seats are taken
+    const takenSeats = []
+    const seats = customers.map((x) => x.seatId)
+    for (let i = 0; i < flight.bookings.length; i += 1) {
+        for (let i2 = 0; i2 < flight.bookings[i].customers.length; i2 += 1) {
+            takenSeats.push(flight.bookings[i].customers[i2].seatId)
+        }
+    }
+    if (!seats.some((x) => !takenSeats.includes(x))) {
+        return res.status(400).json({ error: 'seat already taken' })
+    }
+
+    // checks that customer seat matches selected cabin class
+    const seatCheck = customers.map((x) => LayoutBox.findByPk(x.seatId))
+    const waitedSeatCheck = await Promise.all(seatCheck)
+    let typeOfSeat = 'seat'
+    switch (req.body.formData.cabinClass) {
+    case 'Economy':
+        typeOfSeat = 'seat'
+        break
+    case 'Premium Economy':
+        typeOfSeat = 'premiumSeat'
+        break
+    case 'Business':
+        typeOfSeat = 'businessSeat'
+        break
+    default:
+        typeOfSeat = 'seat'
+        break
+    }
+    if (!waitedSeatCheck.every((x) => x.type === typeOfSeat)) {
+        return res.status(400).json({ error: 'seats do not match cabin class' })
+    }
+
+    // looks for promo and checks if valid
+    const promo = await Promotions.findOne({
+        where: {
+            code: req.body.booking.promotionCode,
+            expiryDate: {
+                [Op.gte]: new Date(),
+            },
+            numberOfRedemptions: {
+                [Op.gt]: 0,
+            },
+        },
+    })
+    const flightPrice = calculateFlightPayment([flight], req.body.formData.cabinClass)
+    const price = calculateBookingPayment(
+        flightPrice[0].price,
+        req.body.customers.length,
+        promo?.promotionPercent || 0,
+    )
+    const booking = await Booking.create({ ...req.body.booking, price })
 
     const toSave = []
     for (let i = 0; i < toBuild.length; i += 1) {
@@ -82,7 +168,10 @@ router.post('/', async (req, res) => {
         toSave.push(toBuild[i].save())
     }
     await Promise.all(toSave)
-
+    if (promo) {
+        promo.numberOfRedemptions -= 1
+        await promo.save()
+    }
     return res.status(201).json(booking)
 })
 

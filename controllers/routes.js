@@ -21,16 +21,6 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', tokenExtractor, userExtractor, async (req, res) => {
-    const routeCheck = await Route.findOne({
-        where: {
-            originId: req.body.originId,
-            destinationId: req.body.destinationId,
-        },
-    })
-
-    if (routeCheck) {
-        return res.status(400).json({ error: 'already here' })
-    }
     const route = await Route.create({ ...req.body })
     const routeToReturn = await Route.findOne({
         where: route.id,

@@ -9,10 +9,6 @@ Booking.init({
         primaryKey: true,
         autoIncrement: true,
     },
-    voucherCode: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
     promotionCode: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -40,6 +36,10 @@ Booking.init({
         type: DataTypes.INTEGER,
         allowNull: false,
         references: { model: 'flights', key: 'id' },
+    },
+    price: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
     },
     updatedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE,

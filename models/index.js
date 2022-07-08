@@ -8,6 +8,7 @@ const Plane = require('./plane')
 const Flight = require('./flight')
 const Booking = require('./booking')
 const Customer = require('./customer')
+const Promotions = require('./promotions')
 
 Route.belongsTo(Place, { foreignKey: 'originId', as: 'origin' })
 Route.belongsTo(Place, { foreignKey: 'destinationId', as: 'destination' })
@@ -23,5 +24,5 @@ Booking.hasMany(Customer)
 Customer.belongsTo(LayoutBox, { foreignKey: 'seatId', as: 'seat' })
 
 module.exports = {
-    Admin, Token, Route, Place, Plane, PlaneModel, LayoutBox, Flight, Customer, Booking,
+    Admin, Token, Route, Place, Plane, PlaneModel, LayoutBox, Flight, Customer, Booking, Promotions,
 }

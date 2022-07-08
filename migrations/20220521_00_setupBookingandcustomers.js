@@ -8,10 +8,6 @@ module.exports = {
                 primaryKey: true,
                 autoIncrement: true,
             },
-            voucher_code: {
-                type: DataTypes.STRING,
-                allowNull: true,
-            },
             promotion_code: {
                 type: DataTypes.STRING,
                 allowNull: true,

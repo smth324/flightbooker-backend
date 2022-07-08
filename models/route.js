@@ -23,6 +23,10 @@ Route.init({
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+    price: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     updatedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE,
 }, {
