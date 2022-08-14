@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const { Op } = require('sequelize')
+const { isBefore } = require('date-fns')
 const {
     Booking, Customer, Flight, Route, Plane, Place, PlaneModel, Promotions, LayoutBox,
 } = require('../models')
@@ -108,6 +109,11 @@ router.post('/', async (req, res) => {
         }],
     })
 
+    // checks whether flight is in the past
+    if (isBefore(new Date(flight.departureDate), new Date())) {
+        return res.status(400).json({ error: 'flight is in the past' })
+    }
+
     // checks whether selected seats are taken
     const takenSeats = []
     const seats = customers.map((x) => x.seatId)
@@ -152,6 +158,7 @@ router.post('/', async (req, res) => {
             numberOfRedemptions: {
                 [Op.gt]: 0,
             },
+            active: true,
         },
     })
     const flightPrice = calculateFlightPayment([flight], req.body.formData.cabinClass)

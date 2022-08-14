@@ -31,11 +31,11 @@ Flight.init({
     },
     departureDate: {
         type: DataTypes.DATE,
-        primaryKey: true,
+        allowNull: false,
     },
     arrivalDate: {
         type: DataTypes.DATE,
-        primaryKey: true,
+        allowNull: false,
     },
     updatedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE,

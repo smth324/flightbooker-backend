@@ -45,8 +45,8 @@ router.get('/search', async (req, res) => {
         return res.status(400).send({ error: 'Adults should be greater than or equal to the number of kids' })
     }
 
-    const after = new Date(new Date().setDate(new Date(req.query.departureDate).getDate() + 20))
-    const before = new Date(new Date().setDate(new Date(req.query.departureDate).getDate() - 20))
+    const after = new Date(new Date().setDate(new Date(req.query.departureDate).getDate() + 3))
+    const before = new Date(new Date().setDate(new Date(req.query.departureDate).getDate() - 3))
 
     const flights = await Flight.findAll({
         attributes: { exclude: ['routeId', 'planeId', 'updatedAt', 'createdAt'] },

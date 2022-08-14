@@ -17,6 +17,7 @@ const flightsRouter = require('./controllers/flights')
 const bookingsRouter = require('./controllers/bookings')
 const customersRouter = require('./controllers/customers')
 const promotionsRouter = require('./controllers/promotions')
+const testingRouter = require('./controllers/testing')
 const { errorHandler, unknownEndpoint } = require('./utils/middleware')
 
 app.use(express.json())
@@ -34,9 +35,9 @@ app.use('/api/bookings', bookingsRouter)
 app.use('/api/customers', customersRouter)
 app.use('/api/promotions', promotionsRouter)
 
-app.get('/asd', (req, res) => {
-    res.sendFile(path.resolve('./index.js'))
-})
+if (process.env.NODE_ENV === 'test') {
+    app.use('/api/testing', testingRouter)
+}
 
 app.use('/*', (req, res) => {
     res.sendFile(path.resolve('./build/index.html'))
